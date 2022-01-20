@@ -9,6 +9,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.*;
 import java.io.*;
+import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 import javax.swing.*;
@@ -39,15 +40,8 @@ public class FileExplorer {
     private JButton copyFile;
     private JButton moveFile;
     private JButton pasteFile;
-   
-    private JLabel fileName;
+    private JLabel fileDir;
     private JTextField path;
-    private JLabel date;
-    private JLabel size;
-   
-    private JRadioButton isDirectory;
-    private JRadioButton isFile;
-
     private JPanel newFileDirectoryPanel;
     private JRadioButton newTypeFile;
     private JTextField name;
@@ -62,100 +56,32 @@ public class FileExplorer {
             fileSystemView = FileSystemView.getFileSystemView();
             desktop = Desktop.getDesktop();
 
-            JPanel detailView = new JPanel(new BorderLayout(3, 3));
-         
-            table = new JTable();
-            table.getTableHeader().setFont(new Font ("Segoe UI", Font.BOLD, 12));
-            table.getTableHeader().setOpaque(true);
-            table.getTableHeader().setBackground(Color.BLUE);
-       
-          
-            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            table.setAutoCreateRowSorter(true);
-        
-            listSelectionListener =
-                    new ListSelectionListener() {
-                        @Override
-                        public void valueChanged(ListSelectionEvent lse) {
-                            int row = table.getSelectionModel().getLeadSelectionIndex();
-                            setFileDetails(((FileTableModel) table.getModel()).getFile(row));
-                        }
-                    };
-            table.getSelectionModel().addListSelectionListener(listSelectionListener);
-            JScrollPane tableScroll = new JScrollPane(table);
-            Dimension d = tableScroll.getPreferredSize();
-            tableScroll.setPreferredSize(
-                    new Dimension((int) d.getWidth(), (int) d.getHeight() / 2));
-            detailView.add(tableScroll, BorderLayout.CENTER);
 
-            // the File tree
-            DefaultMutableTreeNode root = new DefaultMutableTreeNode();
-            treeModel = new DefaultTreeModel(root);
+            // Topmost view : details of the selected file/directory
 
-            TreeSelectionListener treeSelectionListener =
-                    new TreeSelectionListener() {
-                        public void valueChanged(TreeSelectionEvent tse) {
-                            DefaultMutableTreeNode node =
-                                    (DefaultMutableTreeNode) tse.getPath().getLastPathComponent();
-                            showChildren(node);
-                            setFileDetails((File) node.getUserObject());
-                        }
-                    };
+            JPanel fileDetails = new JPanel(new BorderLayout(2, 2));
+            fileDetails.setBorder(new EmptyBorder(0, 6, 20, 6));
 
-            // show the file system roots.
-            File[] roots = fileSystemView.getRoots();
-            for (File fileSystemRoot : roots) {
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode(fileSystemRoot);
-                root.add(node);
-               
-                File[] files = fileSystemView.getFiles(fileSystemRoot, true);
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        node.add(new DefaultMutableTreeNode(file));
-                    }
-                }
-    
-            }
+            JPanel fileLabels = new JPanel(new GridLayout(0, 1, 2, 2));
+            fileDetails.add(fileLabels, BorderLayout.WEST);
 
-            tree = new JTree(treeModel);
-            tree.setRootVisible(false);
-            tree.addTreeSelectionListener(treeSelectionListener);
-            tree.setCellRenderer(new FileTreeCellRenderer());
-            tree.expandRow(0);
-            JScrollPane treeScroll = new JScrollPane(tree);
+            JPanel fileValues = new JPanel(new GridLayout(0, 1, 2, 2));
+            fileDetails.add(fileValues, BorderLayout.CENTER);
 
-            tree.setVisibleRowCount(15);
+            fileLabels.add(new JLabel("File/Directory", JLabel.LEADING));
+            fileDir = new JLabel();
+            fileValues.add(fileDir);
 
-            Dimension preferredSize = treeScroll.getPreferredSize();
-            Dimension widePreferred = new Dimension(200, (int) preferredSize.getHeight());
-            treeScroll.setPreferredSize(widePreferred);
-
-            // details for a File
-            JPanel fileMainDetails = new JPanel(new BorderLayout(2, 2));
-            fileMainDetails.setBorder(new EmptyBorder(0, 6, 20, 6));
-
-            JPanel fileDetailsLabels = new JPanel(new GridLayout(0, 1, 2, 2));
-            fileMainDetails.add(fileDetailsLabels, BorderLayout.WEST);
-
-            JPanel fileDetailsValues = new JPanel(new GridLayout(0, 1, 2, 2));
-            fileMainDetails.add(fileDetailsValues, BorderLayout.CENTER);
-
-            fileDetailsLabels.add(new JLabel("File", JLabel.LEADING));
-            fileName = new JLabel();
-            fileDetailsValues.add(fileName);
-
-            fileDetailsLabels.add(new JLabel("Path/name", JLabel.LEADING));
+            fileLabels.add(new JLabel("Path/name", JLabel.LEADING));
             path = new JTextField(5);
             path.setEditable(false);
-
-            fileDetailsValues.add(path);
+            fileValues.add(path);
      
 
 
             // toolbar 
 
             JToolBar toolBar = new JToolBar();
-         
             toolBar.setFloatable(false);
 
 
@@ -265,24 +191,100 @@ public class FileExplorer {
 
            
 
-            JPanel fileView = new JPanel(new BorderLayout(3, 3));
+            // View that holds the toolbar and file details
 
-            fileView.add(toolBar, BorderLayout.NORTH);
-            fileView.add(fileMainDetails, BorderLayout.CENTER);
+            JPanel TopView = new JPanel(new BorderLayout(3, 3));
 
+            TopView.add(toolBar, BorderLayout.NORTH);
+            TopView.add(fileDetails, BorderLayout.CENTER);
     
-            mainFrame.add(fileView, BorderLayout.NORTH);
+            mainFrame.add(TopView, BorderLayout.NORTH);
 
-            JSplitPane splitPane =
-                    new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, detailView);
+
+            // Lower view containing table and hierarchy
+
+            JPanel LowerView = new JPanel(new BorderLayout(3, 3));
+         
+            table = new JTable();
+            table.getTableHeader().setFont(new Font ("Segoe UI", Font.BOLD, 12));
+            table.getTableHeader().setOpaque(true);
+            table.getTableHeader().setBackground(Color.BLUE);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            table.setAutoCreateRowSorter(true);
+        
+            listSelectionListener =
+                    new ListSelectionListener() {
+                        @Override
+                        public void valueChanged(ListSelectionEvent lse) {
+                            int row = table.getSelectionModel().getLeadSelectionIndex();
+                            setFileDetails(((FileTableModel) table.getModel()).getFile(row));
+                        }
+                    };
+          
+            table.getSelectionModel().addListSelectionListener(listSelectionListener);
+
+            
+            JScrollPane fileDirTable = new JScrollPane(table);
+            Dimension dimension = fileDirTable.getPreferredSize();
+            fileDirTable.setPreferredSize(
+                    new Dimension(800, (int) dimension.getHeight() / 2));
+            LowerView.add(fileDirTable, BorderLayout.CENTER);
+
+
+            // HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+            // the File tree
+            DefaultMutableTreeNode root = new DefaultMutableTreeNode();
+            treeModel = new DefaultTreeModel(root);
+
+            TreeSelectionListener treeSelectionListener =
+                    new TreeSelectionListener() {
+                        public void valueChanged(TreeSelectionEvent tse) {
+                            DefaultMutableTreeNode node =
+                                    (DefaultMutableTreeNode) tse.getPath().getLastPathComponent();
+                            showChildren(node);
+                            setFileDetails((File) node.getUserObject());
+                        }
+                    };
+
+            // show the file system roots.
+            File[] roots = fileSystemView.getRoots();
+            for (File fileSystemRoot : roots) {
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode(fileSystemRoot);
+                root.add(node);
+               
+                File[] files = fileSystemView.getFiles(fileSystemRoot, true);
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        node.add(new DefaultMutableTreeNode(file));
+                    }
+                }
+    
+            }
+
+            tree = new JTree(treeModel);
+            tree.setRootVisible(false);
+            tree.addTreeSelectionListener(treeSelectionListener);
+            tree.setCellRenderer(new FileTreeCellRenderer());
+            tree.expandRow(0);
+            tree.setVisibleRowCount(20);
+
+
+            JScrollPane treeHierarchy = new JScrollPane(tree);
+            Dimension preferredSize = treeHierarchy.getPreferredSize();
+            Dimension d = new Dimension(200, (int) preferredSize.getHeight());
+            treeHierarchy.setPreferredSize(d);
+
+
+
+            JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeHierarchy, LowerView);
             mainFrame.add(splitPane, BorderLayout.CENTER);
 
-            JPanel simpleOutput = new JPanel(new BorderLayout(3, 3));
+            JPanel progressView = new JPanel(new BorderLayout(3, 3));
             progressBar = new JProgressBar();
-            simpleOutput.add(progressBar, BorderLayout.EAST);
+            progressView.add(progressBar, BorderLayout.EAST);
             progressBar.setVisible(false);
 
-            mainFrame.add(simpleOutput, BorderLayout.SOUTH);
+            mainFrame.add(progressView, BorderLayout.SOUTH);
         }
         return mainFrame;
     }
@@ -301,50 +303,36 @@ public class FileExplorer {
         tree.setSelectionInterval(0, 0);
     }
 
-    private TreePath findTreePath(File find) {
-        for (int i = 0; i < tree.getRowCount(); i++) {
-            TreePath treePath = tree.getPathForRow(i);
-            Object object = treePath.getLastPathComponent();
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) object;
-            File nodeFile = (File) node.getUserObject();
-
-            if (nodeFile.equals(find)) {
-                return treePath;
-            }
-        }
-        // not found!
-        return null;
-    }
-
     private void renameFile() {
         if (currentFile == null) {
-            showErrorMessage("No file is selected.", "Please select File");
+            JOptionPane.showMessageDialog(mainFrame, "No file is selected to rename", "Select File", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        String renameTo = JOptionPane.showInputDialog(mainFrame, "New Name");
-        if (renameTo != null) {
+        String newName = JOptionPane.showInputDialog(mainFrame, "New Name");
+        if (newName != null) {
             try {
                 boolean directory = currentFile.isDirectory();
                 TreePath parentPath = findTreePath(currentFile.getParentFile());
-                DefaultMutableTreeNode parentNode =
-                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
-
+                DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+                File newFIle = new File(currentFile.getParentFile(), newName);
                 boolean renamed =
-                        currentFile.renameTo(new File(currentFile.getParentFile(), renameTo));
+                        currentFile.renameTo(newFIle);
                 if (renamed) {
                     if (directory) {
-                        // rename the node..
 
-                        // delete the current node..
                         TreePath currentPath = findTreePath(currentFile);
                         System.out.println(currentPath);
                         DefaultMutableTreeNode currentNode =
                                 (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+                        
 
-                        treeModel.removeNodeFromParent(currentNode);
+                                DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(newFIle);
+                        
+                                treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode)currentNode.getParent(), 0);
+                                treeModel.removeNodeFromParent(currentNode);
 
-                        // add a new node..
+                       
                     }
 
                     showChildren(parentNode);
@@ -479,6 +467,26 @@ public class FileExplorer {
         mainFrame.repaint();
     }
 
+
+
+     // HEREEEEEEEEEEEEEEEEEEEEEEE
+
+    private TreePath findTreePath(File find) {
+        for (int i = 0; i < tree.getRowCount(); i++) {
+            TreePath treePath = tree.getPathForRow(i);
+            Object object = treePath.getLastPathComponent();
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) object;
+            File nodeFile = (File) node.getUserObject();
+
+            if (nodeFile.equals(find)) {
+                return treePath;
+            }
+        }
+        return null;
+    }
+
+    // HEREEEEEEEEEEEEEEEEEEEEEEE
+
     /** Update the table on the EDT */
     private void setTableData(final File[] files) {
         SwingUtilities.invokeLater(
@@ -498,6 +506,8 @@ public class FileExplorer {
                 });
     }
 
+    // resizes column with window size
+
     public void resizeColumnWidth(JTable table) {
         final TableColumnModel columnModel = table.getColumnModel();
         for (int column = 0; column < table.getColumnCount(); column++) {
@@ -512,7 +522,8 @@ public class FileExplorer {
             columnModel.getColumn(column).setPreferredWidth(width);
         }
     }
-
+    
+//HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
      * Of Eels.
@@ -562,18 +573,14 @@ public class FileExplorer {
     private void setFileDetails(File file) {
         currentFile = file;
         Icon icon = fileSystemView.getSystemIcon(file);
-        fileName.setIcon(icon);
-        fileName.setText(fileSystemView.getSystemDisplayName(file));
+        fileDir.setIcon(icon);
+        fileDir.setText(fileSystemView.getSystemDisplayName(file));
         path.setText(file.getPath());
-        date.setText(new Date(file.lastModified()).toString());
-        size.setText(file.length() + " bytes");
-        isDirectory.setSelected(file.isDirectory());
-
-        isFile.setSelected(file.isFile());
-
-        JFrame f = (JFrame) mainFrame.getTopLevelAncestor();
-        if (f != null) {
-            f.setTitle(APP_TITLE + " :: " + fileSystemView.getSystemDisplayName(file));
+       
+    
+        JFrame jframe = (JFrame) mainFrame.getTopLevelAncestor();
+        if (jframe != null) {
+            jframe.setTitle(APP_TITLE + " :: " + fileSystemView.getSystemDisplayName(file));
         }
 
         mainFrame.repaint();
@@ -588,17 +595,17 @@ public class FileExplorer {
                             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                         } catch (Exception weTried) {
                         }
-                        JFrame f = new JFrame(APP_TITLE);
-                        f.setSize(1000, 500);
-                        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                        JFrame frame = new JFrame(APP_TITLE);
+                        frame.setSize(1000, 500);
+                        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
                         FileExplorer fileExplorer = new FileExplorer();
-                        f.setContentPane(fileExplorer.UI());
+                        frame.setContentPane(fileExplorer.UI());
 
-                        f.pack();
-                        f.setLocationByPlatform(true);
-                        f.setMinimumSize(f.getSize());
-                        f.setVisible(true);
+                        frame.pack();
+                        frame.setLocationByPlatform(true);
+                        frame.setMinimumSize(frame.getSize());
+                        frame.setVisible(true);
 
                         fileExplorer.showRootFile();
                     }
@@ -612,7 +619,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-        "Icon", "File", "Path/name", "Size", "Last Modified", 
+        "Type", "Name", "Path", "Size", "Last Modified", 
     };
 
     FileTableModel() {
@@ -678,6 +685,8 @@ class FileTableModel extends AbstractTableModel {
         fireTableDataChanged();
     }
 }
+
+// HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEeeee
 
 /** A TreeCellRenderer for a File. */
 class FileTreeCellRenderer extends DefaultTreeCellRenderer {
