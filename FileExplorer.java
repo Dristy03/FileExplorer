@@ -12,7 +12,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Currency;
 import java.util.Date;
 import java.util.List;
 import javax.swing.*;
@@ -21,7 +20,7 @@ import javax.swing.event.*;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.*;
 import javax.swing.tree.*;
-import static java.nio.file.StandardCopyOption.*;
+
 
 public class FileExplorer {
 
@@ -366,9 +365,7 @@ public class FileExplorer {
 
         try {
                 
-                copiedFile = new File(currentFile.getParentFile(), currentFile.getName());
-
-              
+                copiedFile = new File(currentFile.getParentFile(), currentFile.getName());       
         
              
         }catch (Throwable t ){
@@ -432,6 +429,9 @@ public class FileExplorer {
             return;
         }
 
+        System.out.println("On delete");
+        System.out.println(currentFile);
+
         int result =
                 JOptionPane.showConfirmDialog(
                         mainFrame,
@@ -440,36 +440,47 @@ public class FileExplorer {
                         JOptionPane.ERROR_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             try {
-                System.out.println("currentFile: " + currentFile);
                 TreePath parentPath = findTreePath(currentFile.getParentFile());
-                System.out.println("parentPath: " + parentPath);
-                DefaultMutableTreeNode parentNode =
-                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
-                System.out.println("parentNode: " + parentNode);
+                DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+              
+                System.out.println(currentFile.isFile());
 
-               // boolean directory = currentFile.isDirectory();
-                // if (FileUtils.deleteQuietly(currentFile)) {
-                //     if (directory) {
-                //         // delete the node..
-                //         TreePath currentPath = findTreePath(currentFile);
-                //         System.out.println(currentPath);
-                //         DefaultMutableTreeNode currentNode =
-                //                 (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-
-                //         treeModel.removeNodeFromParent(currentNode);
-                //     }
-
-                //     showChildren(parentNode);
-                // } else {
-                //     String msg = "The file '" + currentFile + "' could not be deleted.";
-                //     showErrorMessage(msg, "Delete Failed");
-                // }
+                if(currentFile.isFile())
+                {
+                    System.out.println("Fileeeeee");
+                    System.out.println(currentFile);
+                    currentFile.delete();
+                }
+                else 
+                {
+                    
+                    TreePath currentPath = findTreePath(currentFile);
+                  
+                    DefaultMutableTreeNode currentNode =
+                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+                    deleteFolder(currentFile);
+                    treeModel.removeNodeFromParent(currentNode);
+                    
+                }
+              
+                showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
             }
         }
         mainFrame.repaint();
     }
+
+    static void deleteFolder(File file){
+        for (File subFile : file.listFiles()) {
+           if(subFile.isDirectory()) {
+              deleteFolder(subFile);
+           } else {
+              subFile.delete();
+           }
+        }
+        file.delete();
+     }
 
     private void newFile() {
         if (currentFile == null) {
@@ -651,6 +662,7 @@ public class FileExplorer {
     /** Update the File details view with the details of this File. */
     private void setFileDetails(File file) {
         currentFile = file;
+        System.out.println(currentFile);
         Icon icon = fileSystemView.getSystemIcon(file);
         fileDir.setIcon(icon);
         fileDir.setText(fileSystemView.getSystemDisplayName(file));
