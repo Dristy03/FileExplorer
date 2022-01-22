@@ -11,6 +11,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import java.util.List;
@@ -21,10 +22,8 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.*;
 import javax.swing.tree.*;
 
-
 public class FileExplorer {
 
-   
     public static final String APP_TITLE = "FileExplorer";
     private Desktop desktop;
     private FileSystemView fileSystemView;
@@ -36,7 +35,7 @@ public class FileExplorer {
     private JProgressBar progressBar;
     private FileTableModel fileTableModel;
     private ListSelectionListener listSelectionListener;
-   
+
     private JButton openFile;
     private JButton deleteFile;
     private JButton newFile;
@@ -49,17 +48,15 @@ public class FileExplorer {
     private JRadioButton newTypeFile;
     private JTextField name;
 
-
     Boolean canPaste = false;
 
     public Container UI() {
         if (mainFrame == null) {
             mainFrame = new JPanel(new BorderLayout(3, 3));
             mainFrame.setBorder(new EmptyBorder(5, 5, 5, 5));
-          
+
             fileSystemView = FileSystemView.getFileSystemView();
             desktop = Desktop.getDesktop();
-
 
             // Topmost view : details of the selected file/directory
 
@@ -80,18 +77,15 @@ public class FileExplorer {
             path = new JTextField(5);
             path.setEditable(false);
             fileValues.add(path);
-     
 
-
-            // toolbar 
+            // toolbar
 
             JToolBar toolBar = new JToolBar();
             toolBar.setFloatable(false);
 
-
             newFile = new JButton(new ImageIcon(
-                "images/file.png"));
-                newFile.setToolTipText("<html><div style='padding: -10; background:white; '>New</div></html>");
+                    "images/file.png"));
+            newFile.setToolTipText("<html><div style='padding: -10; background:white; '>New</div></html>");
             newFile.setMnemonic('n');
             newFile.addActionListener(
                     new ActionListener() {
@@ -101,12 +95,10 @@ public class FileExplorer {
                     });
             toolBar.add(newFile);
 
-
             toolBar.addSeparator();
 
-
             openFile = new JButton(new ImageIcon(
-                "images/open.png"));
+                    "images/open.png"));
             openFile.setToolTipText("<html><div style='padding: -10; background:white; '>Open</div></html>");
             openFile.setMnemonic('o');
 
@@ -122,54 +114,46 @@ public class FileExplorer {
                         }
                     });
             toolBar.add(openFile);
-           
-         
-         
 
             copyFile = new JButton(new ImageIcon(
-                "images/copy.png"));
+                    "images/copy.png"));
             copyFile.setToolTipText("<html><div style='padding: -10; background:white; '>Copy</div></html>");
             copyFile.setMnemonic('c');
             copyFile.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                           copyFile();
+                            copyFile();
                         }
                     });
             toolBar.add(copyFile);
 
-
             pasteFile = new JButton(new ImageIcon(
-                "images/paste.png"));
+                    "images/paste.png"));
             pasteFile.setToolTipText("<html><div style='padding: -10; background:white; '>Paste</div></html>");
             pasteFile.setMnemonic('p');
             pasteFile.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                           canPaste = true;
-                           pasteFile();
+                            canPaste = true;
+                            pasteFile();
                         }
                     });
             toolBar.add(pasteFile);
 
-
-
             moveFile = new JButton(new ImageIcon(
-                "images/move.png"));
+                    "images/move.png"));
             moveFile.setToolTipText("<html><div style='padding: -10; background:white; '>Move</div></html>");
             moveFile.setMnemonic('m');
             moveFile.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                           moveFile();
+                            moveFile();
                         }
                     });
             toolBar.add(moveFile);
 
-
-
             JButton renameFile = new JButton(new ImageIcon(
-                "images/rename.png"));
+                    "images/rename.png"));
             renameFile.setToolTipText("<html><div style='padding: -10; background:white; '>Rename</div></html>");
             renameFile.setMnemonic('r');
             renameFile.addActionListener(
@@ -181,7 +165,7 @@ public class FileExplorer {
             toolBar.add(renameFile);
 
             deleteFile = new JButton(new ImageIcon(
-                "images/delete.png"));
+                    "images/delete.png"));
             deleteFile.setToolTipText("<html><div style='padding: -10; background:white; '>Delete</div></html>");
             deleteFile.setMnemonic('d');
             deleteFile.addActionListener(
@@ -194,76 +178,68 @@ public class FileExplorer {
 
             toolBar.addSeparator();
 
-           
-
             // View that holds the toolbar and file details
 
             JPanel TopView = new JPanel(new BorderLayout(3, 3));
 
             TopView.add(toolBar, BorderLayout.NORTH);
             TopView.add(fileDetails, BorderLayout.CENTER);
-    
-            mainFrame.add(TopView, BorderLayout.NORTH);
 
+            mainFrame.add(TopView, BorderLayout.NORTH);
 
             // Lower view containing table and hierarchy
 
             JPanel LowerView = new JPanel(new BorderLayout(3, 3));
-         
+
             table = new JTable();
-            table.getTableHeader().setFont(new Font ("Segoe UI", Font.BOLD, 12));
+            table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
             table.getTableHeader().setOpaque(true);
             table.getTableHeader().setBackground(Color.BLUE);
             table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             table.setAutoCreateRowSorter(true);
-        
-            listSelectionListener =
-                    new ListSelectionListener() {
-                        @Override
-                        public void valueChanged(ListSelectionEvent lse) {
-                            int row = table.getSelectionModel().getLeadSelectionIndex();
-                            setFileDetails(((FileTableModel) table.getModel()).getFile(row));
-                        }
-                    };
-          
+
+            listSelectionListener = new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent lse) {
+                    int row = table.getSelectionModel().getLeadSelectionIndex();
+                    setFileDetails(((FileTableModel) table.getModel()).getFile(row));
+                }
+            };
+
             table.getSelectionModel().addListSelectionListener(listSelectionListener);
 
-            
             JScrollPane fileDirTable = new JScrollPane(table);
             Dimension dimension = fileDirTable.getPreferredSize();
             fileDirTable.setPreferredSize(
                     new Dimension(800, (int) dimension.getHeight() / 2));
             LowerView.add(fileDirTable, BorderLayout.CENTER);
 
-
-            // HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+           
             // the File tree
             DefaultMutableTreeNode root = new DefaultMutableTreeNode();
             treeModel = new DefaultTreeModel(root);
 
-            TreeSelectionListener treeSelectionListener =
-                    new TreeSelectionListener() {
-                        public void valueChanged(TreeSelectionEvent tse) {
-                            DefaultMutableTreeNode node =
-                                    (DefaultMutableTreeNode) tse.getPath().getLastPathComponent();
-                            showChildren(node);
-                            setFileDetails((File) node.getUserObject());
-                        }
-                    };
+            TreeSelectionListener treeSelectionListener = new TreeSelectionListener() {
+                public void valueChanged(TreeSelectionEvent tse) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) tse.getPath().getLastPathComponent();
+                    showChildren(node);
+                    setFileDetails((File) node.getUserObject());
+                }
+            };
 
             // show the file system roots.
             File[] roots = fileSystemView.getRoots();
             for (File fileSystemRoot : roots) {
                 DefaultMutableTreeNode node = new DefaultMutableTreeNode(fileSystemRoot);
                 root.add(node);
-               
+
                 File[] files = fileSystemView.getFiles(fileSystemRoot, true);
                 for (File file : files) {
                     if (file.isDirectory()) {
                         node.add(new DefaultMutableTreeNode(file));
                     }
                 }
-    
+
             }
 
             tree = new JTree(treeModel);
@@ -273,13 +249,10 @@ public class FileExplorer {
             tree.expandRow(0);
             tree.setVisibleRowCount(20);
 
-
             JScrollPane treeHierarchy = new JScrollPane(tree);
             Dimension preferredSize = treeHierarchy.getPreferredSize();
             Dimension d = new Dimension(200, (int) preferredSize.getHeight());
             treeHierarchy.setPreferredSize(d);
-
-
 
             JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeHierarchy, LowerView);
             mainFrame.add(splitPane, BorderLayout.CENTER);
@@ -295,80 +268,96 @@ public class FileExplorer {
     }
 
     File copiedFile;
+
     protected void pasteFile() {
 
-        try{
-            if(canPaste)
-            {
+        try {
+            if (canPaste) {
+                System.out.println("copy-paste");
+            
                 if (currentFile == null) {
-                    JOptionPane.showMessageDialog(mainFrame, "No file is selected to paste", "Select File", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(mainFrame, "No file is selected to paste", "Select File",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                boolean directory = currentFile.isDirectory();
+                if (currentFile.isDirectory()) {
 
-                if(directory)
-                {
+                    System.out.println(copiedFile);
+                    System.out.println(currentFile);
 
+                    String path = currentFile.getAbsolutePath() +"/"+ copiedFile.getName();
 
-                    TreePath currentPath = findTreePath(currentFile);
-                    TreePath parentPath = findTreePath(currentFile.getParentFile());
-
-                    copyDir(copiedFile.toPath(), currentFile.toPath());
-                    DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
-                  
-                    DefaultMutableTreeNode currentNode =
-                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+                    Path newPath = Paths.get(path);
+                    System.out.println(newPath);
                     
-                            DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(copiedFile);
-                    
-                            treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode)currentNode, 0);
+                    copyDir(copiedFile.toPath(), newPath);
+                    TreePath filePath = findTreePath(currentFile);
+                    DefaultMutableTreeNode fileNode = (DefaultMutableTreeNode) filePath.getLastPathComponent();
+
+                    if(copiedFile.isDirectory())
+                    {
     
-                            showChildren(parentNode);
-                }
-                else
-                {
+                        TreePath currentPath = findTreePath(currentFile);
+    
+                        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+    
+                        DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(copiedFile);
+    
+                        treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode) currentNode, 0);
+    
+    
+                    }
+
+
+                    showChildren(fileNode);
                     
+                } else {
+
                     showErrorMessage("Can not copy a file/directory in another file.", "Copy-Paste Failed");
                 }
-    
+
             }
 
-        }catch (Throwable t) {
+        } catch (Throwable t) {
             showThrowable(t);
         }
 
         mainFrame.repaint();
 
         canPaste = false;
-      
+
     }
+
     public static void copyDir(Path src, Path dest) throws IOException {
+
+    
         Files.walk(src)
                 .forEach(source -> {
                     try {
                         Files.copy(source, dest.resolve(src.relativize(source)),
-                                        StandardCopyOption.REPLACE_EXISTING);
+                                StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 });
     }
+
     protected void moveFile() {
     }
 
     protected void copyFile() {
         if (currentFile == null) {
-            JOptionPane.showMessageDialog(mainFrame, "No file is selected to copy", "Select File", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "No file is selected to copy", "Select File",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         try {
-                
-                copiedFile = new File(currentFile.getParentFile(), currentFile.getName());       
-        
-             
-        }catch (Throwable t ){
+
+            copiedFile = new File(currentFile.getParentFile(), currentFile.getName());
+
+        } catch (Throwable t) {
             showThrowable(t);
         }
 
@@ -381,7 +370,8 @@ public class FileExplorer {
 
     private void renameFile() {
         if (currentFile == null) {
-            JOptionPane.showMessageDialog(mainFrame, "No file is selected to rename", "Select File", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "No file is selected to rename", "Select File",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -392,23 +382,20 @@ public class FileExplorer {
                 TreePath parentPath = findTreePath(currentFile.getParentFile());
                 DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
                 File newFIle = new File(currentFile.getParentFile(), newName);
-                boolean renamed =
-                        currentFile.renameTo(newFIle);
+                boolean renamed = currentFile.renameTo(newFIle);
                 if (renamed) {
                     if (directory) {
 
                         TreePath currentPath = findTreePath(currentFile);
                         System.out.println(currentPath);
-                        DefaultMutableTreeNode currentNode =
-                                (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-                        
+                        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath
+                                .getLastPathComponent();
 
-                                DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(newFIle);
-                        
-                                treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode)currentNode.getParent(), 0);
-                                treeModel.removeNodeFromParent(currentNode);
+                        DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(newFIle);
 
-                       
+                        treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode) currentNode.getParent(), 0);
+                        treeModel.removeNodeFromParent(currentNode);
+
                     }
 
                     showChildren(parentNode);
@@ -432,37 +419,32 @@ public class FileExplorer {
         System.out.println("On delete");
         System.out.println(currentFile);
 
-        int result =
-                JOptionPane.showConfirmDialog(
-                        mainFrame,
-                        "Are you sure you want to delete this file?",
-                        "Delete File",
-                        JOptionPane.ERROR_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(
+                mainFrame,
+                "Are you sure you want to delete this file?",
+                "Delete File",
+                JOptionPane.ERROR_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             try {
                 TreePath parentPath = findTreePath(currentFile.getParentFile());
                 DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
-              
+
                 System.out.println(currentFile.isFile());
 
-                if(currentFile.isFile())
-                {
+                if (currentFile.isFile()) {
                     System.out.println("Fileeeeee");
                     System.out.println(currentFile);
                     currentFile.delete();
-                }
-                else 
-                {
-                    
+                } else {
+
                     TreePath currentPath = findTreePath(currentFile);
-                  
-                    DefaultMutableTreeNode currentNode =
-                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+
+                    DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
                     deleteFolder(currentFile);
                     treeModel.removeNodeFromParent(currentNode);
-                    
+
                 }
-              
+
                 showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
@@ -471,16 +453,16 @@ public class FileExplorer {
         mainFrame.repaint();
     }
 
-    static void deleteFolder(File file){
+    static void deleteFolder(File file) {
         for (File subFile : file.listFiles()) {
-           if(subFile.isDirectory()) {
-              deleteFolder(subFile);
-           } else {
-              subFile.delete();
-           }
+            if (subFile.isDirectory()) {
+                deleteFolder(subFile);
+            } else {
+                subFile.delete();
+            }
         }
         file.delete();
-     }
+    }
 
     private void newFile() {
         if (currentFile == null) {
@@ -507,9 +489,8 @@ public class FileExplorer {
             newFileDirectoryPanel.add(southRadio, BorderLayout.SOUTH);
         }
 
-        int result =
-                JOptionPane.showConfirmDialog(
-                        mainFrame, newFileDirectoryPanel, "Create File", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(
+                mainFrame, newFileDirectoryPanel, "Create File", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             try {
                 boolean created;
@@ -526,11 +507,10 @@ public class FileExplorer {
                 if (created) {
 
                     TreePath parentPath = findTreePath(parentFile);
-                    DefaultMutableTreeNode parentNode =
-                            (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+                    DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
 
                     if (file.isDirectory()) {
-                  
+
                         DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(file);
                         treeModel.insertNodeInto(newNode, parentNode, parentNode.getChildCount());
                     }
@@ -557,9 +537,7 @@ public class FileExplorer {
         mainFrame.repaint();
     }
 
-
-
-     // HEREEEEEEEEEEEEEEEEEEEEEEE
+  
 
     private TreePath findTreePath(File find) {
         for (int i = 0; i < tree.getRowCount(); i++) {
@@ -575,7 +553,7 @@ public class FileExplorer {
         return null;
     }
 
-    // HEREEEEEEEEEEEEEEEEEEEEEEE
+
 
     /** Update the table on the EDT */
     private void setTableData(final File[] files) {
@@ -591,7 +569,7 @@ public class FileExplorer {
                         fileTableModel.setFiles(files);
                         table.getSelectionModel().addListSelectionListener(listSelectionListener);
                         resizeColumnWidth(table);
-                     
+
                     }
                 });
     }
@@ -605,17 +583,18 @@ public class FileExplorer {
             for (int row = 0; row < table.getRowCount(); row++) {
                 TableCellRenderer renderer = table.getCellRenderer(row, column);
                 Component comp = table.prepareRenderer(renderer, row, column);
-                width = Math.max(comp.getPreferredSize().width +1 , width);
+                width = Math.max(comp.getPreferredSize().width + 1, width);
             }
-            if(width > 300)
-                width=300;
+            if (width > 300)
+                width = 300;
             columnModel.getColumn(column).setPreferredWidth(width);
         }
     }
-    
-//HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+
+   
     /**
-     * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
+     * Add the files that are contained within the directory of this node. Thanks to
+     * Hovercraft Full
      * Of Eels.
      */
     private void showChildren(final DefaultMutableTreeNode node) {
@@ -623,39 +602,38 @@ public class FileExplorer {
         progressBar.setVisible(true);
         progressBar.setIndeterminate(true);
 
-        SwingWorker<Void, File> worker =
-                new SwingWorker<Void, File>() {
-                    @Override
-                    public Void doInBackground() {
-                        File file = (File) node.getUserObject();
-                        if (file.isDirectory()) {
-                            File[] files = fileSystemView.getFiles(file, true); // !!
-                            if (node.isLeaf()) {
-                                for (File child : files) {
-                                    if (child.isDirectory()) {
-                                        publish(child);
-                                    }
-                                }
+        SwingWorker<Void, File> worker = new SwingWorker<Void, File>() {
+            @Override
+            public Void doInBackground() {
+                File file = (File) node.getUserObject();
+                if (file.isDirectory()) {
+                    File[] files = fileSystemView.getFiles(file, true); // !!
+                    if (node.isLeaf()) {
+                        for (File child : files) {
+                            if (child.isDirectory()) {
+                                publish(child);
                             }
-                            setTableData(files);
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    protected void process(List<File> chunks) {
-                        for (File child : chunks) {
-                            node.add(new DefaultMutableTreeNode(child));
                         }
                     }
+                    setTableData(files);
+                }
+                return null;
+            }
 
-                    @Override
-                    protected void done() {
-                        progressBar.setIndeterminate(false);
-                        progressBar.setVisible(false);
-                        tree.setEnabled(true);
-                    }
-                };
+            @Override
+            protected void process(List<File> chunks) {
+                for (File child : chunks) {
+                    node.add(new DefaultMutableTreeNode(child));
+                }
+            }
+
+            @Override
+            protected void done() {
+                progressBar.setIndeterminate(false);
+                progressBar.setVisible(false);
+                tree.setEnabled(true);
+            }
+        };
         worker.execute();
     }
 
@@ -667,8 +645,7 @@ public class FileExplorer {
         fileDir.setIcon(icon);
         fileDir.setText(fileSystemView.getSystemDisplayName(file));
         path.setText(file.getPath());
-       
-    
+
         JFrame jframe = (JFrame) mainFrame.getTopLevelAncestor();
         if (jframe != null) {
             jframe.setTitle(APP_TITLE + " :: " + fileSystemView.getSystemDisplayName(file));
@@ -677,7 +654,6 @@ public class FileExplorer {
         mainFrame.repaint();
     }
 
-   
     public static void main(String[] args) {
         SwingUtilities.invokeLater(
                 new Runnable() {
@@ -710,7 +686,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-        "Type", "Name", "Path", "Size", "Last Modified", 
+            "Type", "Name", "Path", "Size", "Last Modified",
     };
 
     FileTableModel() {
@@ -734,7 +710,7 @@ class FileTableModel extends AbstractTableModel {
                 return file.length();
             case 4:
                 return file.lastModified();
-       
+
             default:
                 System.err.println("Logic Error");
         }
