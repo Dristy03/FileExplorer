@@ -48,7 +48,7 @@ public class FileExplorer {
     private JRadioButton newTypeFile;
     private JTextField name;
 
-    Boolean canPaste = false;
+    Boolean canPaste = false, canMove = false;
 
     public Container UI() {
         if (mainFrame == null) {
@@ -127,19 +127,6 @@ public class FileExplorer {
                     });
             toolBar.add(copyFile);
 
-            pasteFile = new JButton(new ImageIcon(
-                    "images/paste.png"));
-            pasteFile.setToolTipText("<html><div style='padding: -10; background:white; '>Paste</div></html>");
-            pasteFile.setMnemonic('p');
-            pasteFile.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            canPaste = true;
-                            pasteFile();
-                        }
-                    });
-            toolBar.add(pasteFile);
-
             moveFile = new JButton(new ImageIcon(
                     "images/move.png"));
             moveFile.setToolTipText("<html><div style='padding: -10; background:white; '>Move</div></html>");
@@ -147,10 +134,24 @@ public class FileExplorer {
             moveFile.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
+                            canMove = true;
                             moveFile();
                         }
                     });
             toolBar.add(moveFile);
+
+            pasteFile = new JButton(new ImageIcon(
+                    "images/paste.png"));
+            pasteFile.setToolTipText("<html><div style='padding: -10; background:white; '>Paste</div></html>");
+            pasteFile.setMnemonic('p');
+            pasteFile.setEnabled(false);
+            pasteFile.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            pasteFile();
+                        }
+                    });
+            toolBar.add(pasteFile);
 
             JButton renameFile = new JButton(new ImageIcon(
                     "images/rename.png"));
@@ -214,7 +215,6 @@ public class FileExplorer {
                     new Dimension(800, (int) dimension.getHeight() / 2));
             LowerView.add(fileDirTable, BorderLayout.CENTER);
 
-           
             // the File tree
             DefaultMutableTreeNode root = new DefaultMutableTreeNode();
             treeModel = new DefaultTreeModel(root);
@@ -267,14 +267,14 @@ public class FileExplorer {
         return mainFrame;
     }
 
-    File copiedFile;
+    File copiedFile, movedFile;
 
     protected void pasteFile() {
 
         try {
             if (canPaste) {
                 System.out.println("copy-paste");
-            
+
                 if (currentFile == null) {
                     JOptionPane.showMessageDialog(mainFrame, "No file is selected to paste", "Select File",
                             JOptionPane.ERROR_MESSAGE);
@@ -286,37 +286,97 @@ public class FileExplorer {
                     System.out.println(copiedFile);
                     System.out.println(currentFile);
 
-                    String path = currentFile.getAbsolutePath() +"/"+ copiedFile.getName();
+                    String path = currentFile.getAbsolutePath() + "/" + copiedFile.getName();
 
                     Path newPath = Paths.get(path);
                     System.out.println(newPath);
-                    
+
                     copyDir(copiedFile.toPath(), newPath);
                     TreePath filePath = findTreePath(currentFile);
                     DefaultMutableTreeNode fileNode = (DefaultMutableTreeNode) filePath.getLastPathComponent();
 
-                    if(copiedFile.isDirectory())
-                    {
-    
+                    if (copiedFile.isDirectory()) {
+
                         TreePath currentPath = findTreePath(currentFile);
-    
-                        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-    
+
+                        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath
+                                .getLastPathComponent();
+
                         DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(copiedFile);
-    
+
                         treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode) currentNode, 0);
-    
-    
+
                     }
 
-
                     showChildren(fileNode);
-                    
+
                 } else {
 
                     showErrorMessage("Can not copy a file/directory in another file.", "Copy-Paste Failed");
                 }
 
+            } else if (canMove) {
+                System.out.println("move");
+
+                if (currentFile == null) {
+                    JOptionPane.showMessageDialog(mainFrame, "No file is selected to paste", "Select File",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (currentFile.isDirectory()) {
+
+                    System.out.println(movedFile);
+                    System.out.println(currentFile);
+
+                    // new path for moving
+                    String path = currentFile.getAbsolutePath() + "/" + movedFile.getName();
+                    Path newPath = Paths.get(path);
+                    System.out.println(newPath);
+
+                    // inserting new node
+
+                    copyDir(movedFile.toPath(), newPath);
+
+                    // destination node
+                    TreePath filePath = findTreePath(currentFile);
+                    DefaultMutableTreeNode fileNode = (DefaultMutableTreeNode) filePath.getLastPathComponent();
+
+                    // parent node of source
+                    TreePath parentPath = findTreePath(movedFile.getParentFile());
+                    DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+
+                    if (movedFile.isDirectory()) {
+
+                        // creating new node for source
+                        DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(movedFile);
+
+                        treeModel.insertNodeInto(newChild, (DefaultMutableTreeNode) fileNode, 0);
+
+                    }
+
+                    // Deleting previous node
+
+                    if (movedFile.isFile()) {
+                        movedFile.delete();
+                    } else {
+
+                        // source node
+                        TreePath currentPath = findTreePath(movedFile);
+                        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath
+                                .getLastPathComponent();
+                        deleteFolder(movedFile);
+                        treeModel.removeNodeFromParent(currentNode);
+
+                    }
+
+                    showChildren(parentNode);
+                    showChildren(fileNode);
+
+                } else {
+
+                    showErrorMessage("Can not copy a file/directory in another file.", "Copy-Paste Failed");
+                }
             }
 
         } catch (Throwable t) {
@@ -324,14 +384,14 @@ public class FileExplorer {
         }
 
         mainFrame.repaint();
-
+        pasteFile.setEnabled(false);
         canPaste = false;
+        canMove = false;
 
     }
 
     public static void copyDir(Path src, Path dest) throws IOException {
 
-    
         Files.walk(src)
                 .forEach(source -> {
                     try {
@@ -344,6 +404,21 @@ public class FileExplorer {
     }
 
     protected void moveFile() {
+        if (currentFile == null) {
+            JOptionPane.showMessageDialog(mainFrame, "No file is selected to move", "Select File",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+
+            movedFile = new File(currentFile.getParentFile(), currentFile.getName());
+            pasteFile.setEnabled(true);
+            canMove = true;
+
+        } catch (Throwable t) {
+            showThrowable(t);
+        }
     }
 
     protected void copyFile() {
@@ -356,6 +431,8 @@ public class FileExplorer {
         try {
 
             copiedFile = new File(currentFile.getParentFile(), currentFile.getName());
+            pasteFile.setEnabled(true);
+            canPaste = true;
 
         } catch (Throwable t) {
             showThrowable(t);
@@ -537,8 +614,6 @@ public class FileExplorer {
         mainFrame.repaint();
     }
 
-  
-
     private TreePath findTreePath(File find) {
         for (int i = 0; i < tree.getRowCount(); i++) {
             TreePath treePath = tree.getPathForRow(i);
@@ -552,8 +627,6 @@ public class FileExplorer {
         }
         return null;
     }
-
-
 
     /** Update the table on the EDT */
     private void setTableData(final File[] files) {
@@ -591,7 +664,6 @@ public class FileExplorer {
         }
     }
 
-   
     /**
      * Add the files that are contained within the directory of this node. Thanks to
      * Hovercraft Full
